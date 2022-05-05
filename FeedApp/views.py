@@ -69,3 +69,55 @@ def new_post(request):
             return redirect("FeedApp:myfeed")
     context = {"form": form}
     return render(request, "FeedApp/new_post.html", context)
+
+
+@login_required
+def comments(request, post_id):
+    if request.method == "POST" and request.POST.get("btn1"):
+        comment = request.POST.get("comment")
+        Comment.objects.create(
+            post_id=post_id,
+            username=request.user,
+            text=comment,
+            date_added=date.today(),
+        )
+    comments = Comment.objects.filter(post=post_id)
+    post = Post.objects.get(id=post_id)
+
+    context = {"post": post, "comments": comments}
+
+    return render(request, "FeedApp/comments.html", context)
+
+
+@login_required
+def friendsfeed(request):
+    comment_count_list = []
+    like_count_list = []
+    friends = Profile.objects.filter(user=request.user).values("friends")
+    posts = Post.objects.filter(username__in=friends).order_by("-date_posted")
+    for p in posts:
+        c_count = Comment.objects.filter(post=p).count()
+        l_count = Like.objects.filter(post=p).count()
+        comment_count_list.append(c_count)
+        like_count_list.append(l_count)
+    zipped_list = zip(posts, comment_count_list, like_count_list)
+
+    if request.method == "POST" and request.POST.get("like"):
+        post_to_like = request.POST.get("like")
+        print(post_to_like)
+        like_already_exists = Like.objects.filter(
+            post_id=post_to_like, username=request.user
+        )
+        if not like_already_exists():
+            Like.objects.create(post_id=post_to_like, username=request.user)
+            return redirect("FeedApp:friendsfeed")
+
+    context = {"posts": posts, "zipped_list": zipped_list}
+    return render(request, "FeedApp/friendsfeed.html", context)
+
+
+@login_required
+def friends(request):
+    # get the admin profile and user profile to create the first relationship
+    admin_profile = Profile.objects.get(user=1)
+    user_profile = Profile.objects.get(user=request.user)
