@@ -8,7 +8,7 @@
     <p>My Profile:</p>
 </h1>
 
-<form action="{% url 'FeedApp:profile' %}" methjod='post'>
+<form action="{% url 'FeedApp:profile' %}" method='post'>
     {% csrf_token %}
     {{ form |crispy}}
     <br><br>
